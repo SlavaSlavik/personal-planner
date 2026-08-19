@@ -15,113 +15,95 @@ function setView(next){view=next;document.getElementById("spreadTab").classList.
 function render(){let d=monday(offset);title.textContent=range(d);grid.innerHTML="";let a=[];for(let i=0;i<7;i++){let x=new Date(d);x.setDate(d.getDate()+i);a.push({date:x,key:key(x),name:DAYS[i]})}a.slice(0,5).forEach(x=>grid.appendChild(card(x)));let w=document.createElement("article");w.className="weekend-card";w.append(card(a[5],true),card(a[6],true));grid.appendChild(w);if(view==="focus")renderFocus()}
 function card(day,weekend=false){let c=document.createElement(weekend?"div":"article");c.className=weekend?"weekend-day":"day-card";c.innerHTML=`<header><h2>${day.name} <span>${day.date.getDate()}</span></h2><button class="more-day" aria-label="Добавить задачу">•••</button></header><div class="tasks"></div><button class="add-task">＋&nbsp; Добавить${weekend?"":" задачу"}</button>`;let box=c.querySelector(".tasks");tasks(day.key).forEach((t,index)=>{let r=document.createElement("div");r.className="task-row"+(t.done?" completed":"");r.dataset.id=t.id;r.dataset.index=index;r.innerHTML=`<span class="drag-handle" aria-hidden="true">⋮⋮</span><input class="task-check" type="checkbox" ${t.done?"checked":""}>${t.priority?'<button class="priority-star" aria-label="Снять главную">★</button>':""}<button class="task-text"></button>`;r.querySelector(".task-text").textContent=t.text;r.querySelector(".task-check").onchange=e=>{t.done=e.target.checked;save();r.classList.toggle("completed",t.done)};r.querySelector(".task-text").onclick=()=>open(day.key,t.id);r.querySelector(".priority-star")?.addEventListener("click",e=>{e.stopPropagation();t.priority=false;save();render()});enableDrag(r,box,day.key);box.appendChild(r)});c.querySelector(".add-task").onclick=()=>open(day.key);c.querySelector(".more-day").onclick=()=>open(day.key);return c}
 function enableDrag(row,box,dayKey){let hold=null,dragging=false;row.addEventListener("pointerdown",e=>{if(e.target.closest("button,input"))return;hold=setTimeout(()=>{dragging=true;row.classList.add("dragging");try{row.setPointerCapture(e.pointerId)}catch{}},350)});row.addEventListener("pointermove",e=>{if(!dragging)return;let rows=[...box.querySelectorAll(".task-row:not(.dragging)")];let target=rows.find(el=>e.clientY<el.getBoundingClientRect().top+el.offsetHeight/2);box.querySelectorAll(".drag-over").forEach(el=>el.classList.remove("drag-over"));if(target)target.classList.add("drag-over")});row.addEventListener("pointerup",e=>finishDrag(e));row.addEventListener("pointercancel",e=>finishDrag(e));function finishDrag(e){clearTimeout(hold);if(!dragging)return;dragging=false;row.classList.remove("dragging");let rows=[...box.querySelectorAll(".task-row:not(.dragging)")],target=rows.find(el=>e.clientY<el.getBoundingClientRect().top+el.offsetHeight/2);let arr=tasks(dayKey),from=arr.findIndex(t=>t.id===row.dataset.id);if(target){let to=arr.findIndex(t=>t.id===target.dataset.id);let item=arr.splice(from,1)[0];if(from<to)to--;arr.splice(to,0,item)}else{arr.push(...arr.splice(from,1))}save();render();}}
-function renderFocus(){let w=weekData();focusPage.innerHTML=`<section class="focus-block"><div class="focus-title"><h2>Фокус недели</h2></div><div class="focus-list" id="focusList"></div><button class="focus-add" id="addFocus">＋ Добавить</button></section><section class="focus-block"><div class="focus-title"><h2>Задачи</h2></div><div class="focus-list" id="sideList"></div><button class="focus-add-task" id="addSide">＋ Добавить задачу</button></section><section class="focus-block"><div class="focus-title"><h2>Мысли</h2></div><textarea class="focus-note" id="thoughts" placeholder=""></textarea></section><section class="focus-block"><div class="focus-title"><h2>Итог</h2></div><div class="result-list"><div class="result-field"><label>Победа</label><textarea id="win"></textarea></div><div class="result-field"><label>Урок недели</label><textarea id="lesson"></textarea></div><div class="result-field"><label>Перенос</label><textarea id="carry"></textarea></div></div></section>`;
-const list=document.getElementById("focusList");w.focus.filter(Boolean).forEach((text,i)=>{let item=document.createElement("div");item.className="focus-item";item.innerHTML=`<span>${i+1}.</span><input type="text" maxlength="120"><button class="remove-focus" aria-label="Удалить">×</button>`;item.querySelector("input").value=text;item.querySelector("input").addEventListener("input",e=>{let real=w.focus.indexOf(text);if(real>=0){w.focus[real]=e.target.value;save()}});item.querySelector(".remove-focus").onclick=()=>{w.focus=w.focus.filter(x=>x!==text);save();renderFocus()};list.appendChild(item)});let add=document.getElementById("addFocus");add.classList.toggle("hidden",w.focus.filter(Boolean).length>=3);add.onclick=()=>{if(w.focus.filter(Boolean).length<3){w.focus.push("");save();renderFocus();setTimeout(()=>{let els=document.querySelectorAll("#focusList input");els[els.length-1]?.focus()},0)}};
-const side=document.getElementById("sideList");w.sideTasks.forEach((t,i)=>{let row=document.createElement("div");row.className="side-task";row.innerHTML=`<input type="checkbox" ${t.done?"checked":""}><button></button><button class="remove-focus" aria-label="Удалить">×</button>`;row.querySelector("button").textContent=t.text;row.querySelector("input").onchange=e=>{t.done=e.target.checked;save()};row.querySelector("button").onclick=()=>{let text=prompt("Изменить задачу",t.text);if(text!==null&&text.trim()){t.text=text.trim();save();renderFocus()}};row.querySelectorAll(".remove-focus")[0].onclick=()=>{w.sideTasks.splice(i,1);save();renderFocus()};side.appendChild(row)});document.getElementById("addSide").onclick=()=>{let row=document.createElement("div");row.className="side-task add-inline";row.innerHTML=`<input class="new-side-input" maxlength="120" placeholder="Новая задача"><button class="save-inline">Готово</button>`;side.appendChild(row);let el=row.querySelector(".new-side-input");el.focus();let finish=()=>{let text=el.value.trim();if(text)w.sideTasks.push({id:crypto.randomUUID(),text,done:false});save();renderFocus()};row.querySelector(".save-inline").onclick=finish;el.onkeydown=e=>{if(e.key==="Enter")finish();if(e.key==="Escape")renderFocus()}};
-const thoughts=document.getElementById("thoughts");thoughts.value=w.thoughts;thoughts.oninput=()=>{w.thoughts=thoughts.value;save()};["win","lesson","carry"].forEach(k=>{let el=document.getElementById(k);el.value=w.result[k];el.oninput=()=>{w.result[k]=el.value;save()}})}
+function renderFocus(){
+  const w=weekData();
+  if(!Array.isArray(w.focus))w.focus=[];
+  w.focus=w.focus.slice(0,3);
+
+  focusPage.innerHTML=`<section class="focus-block">
+    <div class="focus-title"><h2>Фокус недели</h2></div>
+    <div class="focus-list" id="focusList"></div>
+    <button class="focus-add" id="addFocus">＋ Добавить</button>
+  </section>
+  <section class="focus-block">
+    <div class="focus-title"><h2>Задачи</h2></div>
+    <div class="focus-list" id="sideList"></div>
+    <button class="focus-add-task" id="addSide">＋ Добавить задачу</button>
+  </section>
+  <section class="focus-block">
+    <div class="focus-title"><h2>Мысли</h2></div>
+    <textarea class="focus-note" id="thoughts" placeholder=""></textarea>
+  </section>
+  <section class="focus-block">
+    <div class="focus-title"><h2>Итог</h2></div>
+    <div class="result-list">
+      <label class="result-field"><span>Победа</span><textarea id="win"></textarea></label>
+      <label class="result-field"><span>Урок недели</span><textarea id="lesson"></textarea></label>
+      <label class="result-field"><span>Перенос</span><textarea id="carry"></textarea></label>
+    </div>
+  </section>`;
+
+  const list=document.getElementById("focusList");
+  w.focus.forEach((text,i)=>{
+    const item=document.createElement("div");
+    item.className="focus-item";
+    item.innerHTML=`<span>${i+1}.</span><input type="text" maxlength="120"><button class="remove-focus" aria-label="Удалить">×</button>`;
+    const field=item.querySelector("input");
+    field.value=text;
+    field.addEventListener("input",e=>{w.focus[i]=e.target.value;save();});
+    item.querySelector(".remove-focus").onclick=()=>{w.focus.splice(i,1);save();renderFocus();};
+    list.appendChild(item);
+  });
+
+  const add=document.getElementById("addFocus");
+  add.style.display=w.focus.length>=3?"none":"block";
+  add.onclick=()=>{
+    if(w.focus.length>=3)return;
+    w.focus.push("");
+    save();
+    renderFocus();
+    setTimeout(()=>{
+      const fields=document.querySelectorAll("#focusList input");
+      fields[fields.length-1]?.focus();
+    },0);
+  };
+
+  const side=document.getElementById("sideList");
+  w.sideTasks.forEach((t,i)=>{
+    const row=document.createElement("div");
+    row.className="side-task";
+    row.innerHTML=`<input type="checkbox" ${t.done?"checked":""}><button></button><button class="remove-focus" aria-label="Удалить">×</button>`;
+    row.querySelector("button").textContent=t.text;
+    row.querySelector("input").onchange=e=>{t.done=e.target.checked;save();};
+    row.querySelector("button").onclick=()=>{const text=prompt("Изменить задачу",t.text);if(text!==null&&text.trim()){t.text=text.trim();save();renderFocus();}};
+    row.querySelectorAll(".remove-focus")[0].onclick=()=>{w.sideTasks.splice(i,1);save();renderFocus();};
+    side.appendChild(row);
+  });
+
+  document.getElementById("addSide").onclick=()=>{
+    const row=document.createElement("div");
+    row.className="side-task add-inline";
+    row.innerHTML=`<input class="new-side-input" maxlength="120" placeholder="Новая задача"><button class="save-inline">Готово</button>`;
+    side.appendChild(row);
+    const el=row.querySelector(".new-side-input");
+    el.focus();
+    const finish=()=>{const text=el.value.trim();if(text)w.sideTasks.push({id:crypto.randomUUID(),text,done:false});save();renderFocus();};
+    row.querySelector(".save-inline").onclick=finish;
+    el.onkeydown=e=>{if(e.key==="Enter")finish();if(e.key==="Escape")renderFocus();};
+  };
+
+  const thoughts=document.getElementById("thoughts");
+  thoughts.value=w.thoughts;
+  thoughts.oninput=()=>{w.thoughts=thoughts.value;save();};
+
+  ["win","lesson","carry"].forEach(k=>{
+    const el=document.getElementById(k);
+    el.value=w.result[k];
+    el.oninput=()=>{w.result[k]=el.value;save();};
+  });
+}
 
 document.getElementById("prevWeek").onclick=()=>{offset--;render()};document.getElementById("nextWeek").onclick=()=>{offset++;render()};document.getElementById("spreadTab").onclick=()=>setView("spread");document.getElementById("focusTab").onclick=()=>setView("focus");document.getElementById("closeModal").onclick=close;
 document.getElementById("saveTask").onclick=()=>{let text=input.value.trim();if(!text||!editing)return;let newDay=dateInput.value,a=tasks(newDay);if(editing.id){let old=tasks(editing.day),t=old.find(x=>x.id===editing.id);t.text=text;if(editing.day!==newDay){state[editing.day]=old.filter(x=>x.id!==editing.id);if(priority.checked)a.forEach(x=>x.priority=false);t.priority=priority.checked;a.push(t)}else{if(priority.checked)a.forEach(x=>x.priority=false);t.priority=priority.checked}}else{if(priority.checked)a.forEach(x=>x.priority=false);a.push({id:crypto.randomUUID(),text,done:false,priority:priority.checked})}save();close();render()};
 document.getElementById("deleteTask").onclick=()=>{if(!editing?.id)return;state[editing.day]=tasks(editing.day).filter(t=>t.id!==editing.id);save();close();render()};document.getElementById("globalAdd").onclick=()=>open(key(monday(offset)));modal.onclick=e=>{if(e.target===modal)close()};input.onkeydown=e=>{if(e.key==="Enter")document.getElementById("saveTask").click();if(e.key==="Escape")close()};
 render();
-
-/* ===== v0.5 Focus Week ===== */
-(function () {
-  const KEY = "personal-planner-v05-focus";
-  let items = JSON.parse(localStorage.getItem(KEY) || "[]");
-
-  const save = () => localStorage.setItem(KEY, JSON.stringify(items));
-
-  function card() {
-    return document.querySelector("#focusCard, .focus-card") ||
-      [...document.querySelectorAll("article,section,div")].find(el =>
-        /Фокус недели/.test(el.textContent || "") &&
-        [...el.querySelectorAll("button")].some(b => /Добавить/.test(b.textContent || ""))
-      );
-  }
-
-  function modal() {
-    let m = document.getElementById("focusModal");
-    if (m) return m;
-    m = document.createElement("div");
-    m.id = "focusModal";
-    m.className = "modal hidden";
-    m.innerHTML = `
-      <div class="modal-card">
-        <div class="modal-head">
-          <h2>Фокус недели</h2>
-          <button class="modal-close" id="closeFocus">×</button>
-        </div>
-        <label class="field">
-          <span>Пункт</span>
-          <input id="focusInput" maxlength="100" placeholder="Что главное на этой неделе?">
-        </label>
-        <div class="modal-actions">
-          <button class="save-btn" id="saveFocus">Сохранить</button>
-        </div>
-      </div>`;
-    document.body.appendChild(m);
-    m.addEventListener("click", e => { if (e.target === m) m.classList.add("hidden"); });
-    document.getElementById("closeFocus").onclick = () => m.classList.add("hidden");
-    document.getElementById("saveFocus").onclick = () => {
-      const input = document.getElementById("focusInput");
-      const value = input.value.trim();
-      if (!value || items.length >= 3) return;
-      items.push(value); save(); input.value = ""; m.classList.add("hidden"); render();
-    };
-    document.getElementById("focusInput").onkeydown = e => {
-      if (e.key === "Enter") document.getElementById("saveFocus").click();
-      if (e.key === "Escape") m.classList.add("hidden");
-    };
-    return m;
-  }
-
-  function render() {
-    const c = card();
-    if (!c) return;
-    c.classList.add("focus-card");
-
-    const h = [...c.querySelectorAll("h1,h2,h3")].find(x => /Фокус недели/.test(x.textContent || ""));
-    if (!h) return;
-
-    let list = c.querySelector(".focus-list");
-    if (!list) {
-      list = document.createElement("div");
-      list.className = "focus-list";
-      h.insertAdjacentElement("afterend", list);
-    }
-    list.innerHTML = "";
-
-    items.slice(0,3).forEach((text, i) => {
-      const b = document.createElement("button");
-      b.className = "focus-item";
-      b.textContent = `${i+1}. ${text}`;
-      b.onclick = () => {
-        const next = prompt("Изменить пункт фокуса:", text);
-        if (next === null) return;
-        const value = next.trim();
-        if (!value) return;
-        items[i] = value; save(); render();
-      };
-      list.appendChild(b);
-    });
-
-    let add = c.querySelector(".add-focus") ||
-      [...c.querySelectorAll("button")].find(b => /Добавить/.test(b.textContent || ""));
-    if (add) {
-      add.classList.add("add-focus");
-      add.onclick = () => { if (items.length < 3) { modal().classList.remove("hidden"); setTimeout(()=>document.getElementById("focusInput")?.focus(),0); } };
-      add.style.display = items.length >= 3 ? "none" : "";
-    }
-  }
-
-  // Refresh after the existing v0.4 renderer.
-  const oldRender = window.render;
-  if (typeof oldRender === "function") {
-    window.render = function () { oldRender(); setTimeout(render, 0); };
-  }
-  document.addEventListener("click", e => {
-    if (e.target.closest(".view-tab")) setTimeout(render, 30);
-  });
-  setTimeout(render, 100);
-})();
