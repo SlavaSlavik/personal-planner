@@ -1,0 +1,369 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap');
+
+:root {
+  --bg: #fffdfb;
+  --card: #fffefe;
+  --text: #272321;
+  --muted: #9b817e;
+  --accent: #d85d72;
+  --accent-soft: #fde8ec;
+  --line: #f0dfe0;
+  --check: #dfb9bd;
+  --priority: #efb329;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "DM Sans", system-ui, sans-serif;
+  padding-bottom: 104px;
+}
+
+button, input { font: inherit; }
+
+button { border: 0; background: none; color: inherit; cursor: pointer; }
+
+.app {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 24px 28px 28px;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  text-align: center;
+}
+
+.icon-btn {
+  font-size: 42px;
+  font-weight: 300;
+  color: #332d2b;
+  line-height: 1;
+}
+
+.week-title h1 {
+  margin: 0;
+  font: 600 clamp(28px, 4vw, 42px)/1.1 "Playfair Display", Georgia, serif;
+}
+
+.week-title span {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.view-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr 54px;
+  margin: 24px auto 30px;
+  max-width: 720px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.view-tab {
+  height: 54px;
+  font-size: 16px;
+  border-right: 1px solid var(--line);
+}
+
+.view-tab.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.more-btn { font-size: 18px; letter-spacing: 2px; }
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.day-card, .weekend-card {
+  min-width: 0;
+  height: 250px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  padding: 20px 20px 16px;
+  box-shadow: 0 2px 12px rgba(115, 75, 75, 0.025);
+}
+
+.day-card header, .weekend-day header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.day-card h2, .weekend-day h2 {
+  margin: 0;
+  font: 600 23px/1 "Playfair Display", Georgia, serif;
+  color: var(--accent);
+}
+
+.day-card h2 span, .weekend-day h2 span { color: var(--text); }
+
+.more-day {
+  color: var(--muted);
+  letter-spacing: 2px;
+  font-size: 15px;
+}
+
+.tasks {
+  height: 137px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-top: 18px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #ead1d4 transparent;
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  width: 100%;
+  font-size: 15px;
+  text-align: left;
+}
+
+.task-row .task-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.task-row.completed .task-text {
+  color: #b8aaa8;
+  text-decoration: line-through;
+}
+
+.task-check {
+  appearance: none;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 1.5px solid var(--check);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.task-check:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 5px white;
+}
+
+.priority-star {
+  flex: 0 0 auto;
+  color: var(--priority);
+  font-size: 17px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.add-task {
+  width: 100%;
+  text-align: left;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.weekend-card {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0;
+  overflow: hidden;
+}
+
+.weekend-day {
+  min-width: 0;
+  padding: 20px 16px 16px;
+}
+
+.weekend-day + .weekend-day { border-left: 1px solid var(--line); }
+
+.weekend-day .tasks { height: 130px; }
+.weekend-day .task-row { font-size: 13px; gap: 7px; }
+.weekend-day .task-check { flex-basis: 18px; width: 18px; height: 18px; }
+.weekend-day .add-task { font-size: 12px; }
+
+.bottom-nav {
+  position: fixed;
+  z-index: 10;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(100%, 980px);
+  min-height: 86px;
+  padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: 1fr 1fr 76px 1fr 1fr;
+  align-items: center;
+  background: rgba(255, 253, 251, .96);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+}
+
+.bottom-nav button:not(.add-main) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.bottom-nav .selected { color: var(--accent); }
+
+.nav-icon { font-size: 25px; line-height: 1; }
+
+.add-main {
+  width: 58px;
+  height: 58px;
+  justify-self: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(48, 34, 32, .22);
+  backdrop-filter: blur(5px);
+}
+
+.modal.hidden { display: none; }
+
+.modal-card {
+  width: min(100%, 430px);
+  padding: 24px;
+  border-radius: 22px;
+  background: var(--bg);
+  box-shadow: 0 18px 60px rgba(60, 30, 30, .15);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.modal-head h2 {
+  margin: 0;
+  font: 600 25px/1.1 "Playfair Display", Georgia, serif;
+}
+
+.modal-close { font-size: 30px; color: var(--muted); }
+
+.field { display: grid; gap: 8px; }
+
+.field span { color: var(--muted); font-size: 13px; }
+
+.field input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  outline: none;
+  background: white;
+}
+
+.field input:focus { border-color: #e4aab3; }
+
+.star-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  font-size: 14px;
+}
+
+.star-option input { accent-color: var(--accent); }
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.save-btn, .delete-btn {
+  padding: 11px 18px;
+  border-radius: 12px;
+}
+
+.save-btn {
+  margin-left: auto;
+  background: var(--accent);
+  color: white;
+}
+
+.delete-btn {
+  background: #f7e7e8;
+  color: #b74f60;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 640px) {
+  .app { padding: 18px 14px 20px; }
+  .topbar { grid-template-columns: 34px 1fr 34px; }
+  .icon-btn { font-size: 34px; }
+  .week-title h1 { font-size: 27px; }
+  .week-title span { font-size: 13px; }
+  .view-switch { margin: 20px 0 18px; }
+  .view-tab { height: 48px; font-size: 14px; }
+  .week-grid { gap: 10px; }
+  .day-card, .weekend-card { height: 226px; border-radius: 13px; padding: 15px 13px 12px; }
+  .day-card h2, .weekend-day h2 { font-size: 18px; }
+  .tasks { height: 125px; margin-top: 12px; }
+  .task-row { gap: 7px; min-height: 38px; font-size: 12px; }
+  .task-check { flex-basis: 18px; width: 18px; height: 18px; }
+  .priority-star { font-size: 15px; }
+  .add-task { font-size: 11px; padding-top: 8px; }
+  .weekend-day { padding: 15px 10px 12px; }
+  .weekend-day .tasks { height: 122px; }
+  .bottom-nav {
+    min-height: 78px;
+    padding-left: 8px;
+    padding-right: 8px;
+    grid-template-columns: 1fr 1fr 66px 1fr 1fr;
+  }
+  .bottom-nav button:not(.add-main) { font-size: 10px; }
+  .nav-icon { font-size: 22px; }
+  .add-main { width: 54px; height: 54px; font-size: 30px; }
+}
+
+@media (max-width: 390px) {
+  .week-grid { gap: 8px; }
+  .day-card, .weekend-card { height: 214px; }
+  .tasks { height: 116px; }
+  .task-row { font-size: 11px; }
+  .add-task { font-size: 10px; }
+}
