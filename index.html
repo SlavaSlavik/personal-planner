@@ -3,40 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Ежедневник — Неделя</title>
+<title>Ежедневник</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main class="app">
-<header class="topbar">
-<button class="icon-btn" id="prevWeek">‹</button>
-<div class="week-title"><h1 id="weekTitle"></h1></div>
-<button class="icon-btn" id="nextWeek">›</button>
-</header>
-<div class="view-switch">
-<button class="view-tab active">Разворот</button>
-<button class="view-tab">Фокус</button>
-<button class="more-btn">•••</button>
-</div>
-<section class="week-grid" id="weekGrid"></section>
+  <header class="topbar">
+    <button class="icon-btn" id="prevWeek" aria-label="Предыдущая неделя">‹</button>
+    <div class="week-title"><h1 id="weekTitle"></h1></div>
+    <button class="icon-btn" id="nextWeek" aria-label="Следующая неделя">›</button>
+  </header>
+
+  <div class="view-switch">
+    <button class="view-tab active" id="spreadTab">Разворот</button>
+    <button class="view-tab" id="focusTab">Фокус</button>
+    <button class="more-btn" id="moreBtn">•••</button>
+  </div>
+
+  <section class="week-grid" id="weekGrid"></section>
+  <section class="focus-page hidden" id="focusPage"></section>
 </main>
 
 <nav class="bottom-nav">
-<button><span class="nav-icon">▣</span><span>Месяц</span></button>
-<button class="selected"><span class="nav-icon">▢</span><span>Неделя</span></button>
-<button class="add-main" id="globalAdd">＋</button>
-<button><span class="nav-icon">♧</span><span>Привычки</span></button>
-<button><span class="nav-icon">▷</span><span>Блог</span></button>
+  <button><span class="nav-icon">▣</span><span>Месяц</span></button>
+  <button class="selected"><span class="nav-icon">▢</span><span>Неделя</span></button>
+  <button class="add-main" id="globalAdd" aria-label="Добавить задачу">＋</button>
+  <button><span class="nav-icon">♧</span><span>Привычки</span></button>
+  <button><span class="nav-icon">▷</span><span>Блог</span></button>
 </nav>
 
 <div class="modal hidden" id="taskModal">
-<div class="modal-card">
-<div class="modal-head"><h2 id="modalTitle">Новая задача</h2><button class="modal-close" id="closeModal">×</button></div>
-<label class="field"><span>Задача</span><input id="taskInput" maxlength="120" placeholder="Например, тренировка"></label>
-<label class="star-option"><input id="priorityInput" type="checkbox"> <span>★ Сделать главной задачей дня</span></label>
-<div class="modal-actions"><button class="delete-btn hidden" id="deleteTask">Удалить</button><button class="save-btn" id="saveTask">Сохранить</button></div>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="modalTitle">Новая задача</h2>
+      <button class="modal-close" id="closeModal">×</button>
+    </div>
+    <label class="field">
+      <span>Дата</span>
+      <select id="dateInput"></select>
+    </label>
+    <label class="field">
+      <span>Задача</span>
+      <input id="taskInput" maxlength="120" placeholder="Например, тренировка">
+    </label>
+    <label class="star-option"><input id="priorityInput" type="checkbox"> <span>★ Сделать главной задачей дня</span></label>
+    <div class="modal-actions">
+      <button class="delete-btn hidden" id="deleteTask">Удалить</button>
+      <button class="save-btn" id="saveTask">Сохранить</button>
+    </div>
+  </div>
 </div>
-</div>
+
 <script src="script.js"></script>
 </body>
 </html>
