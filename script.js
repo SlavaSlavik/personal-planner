@@ -24,3 +24,104 @@ document.getElementById("prevWeek").onclick=()=>{offset--;render()};document.get
 document.getElementById("saveTask").onclick=()=>{let text=input.value.trim();if(!text||!editing)return;let newDay=dateInput.value,a=tasks(newDay);if(editing.id){let old=tasks(editing.day),t=old.find(x=>x.id===editing.id);t.text=text;if(editing.day!==newDay){state[editing.day]=old.filter(x=>x.id!==editing.id);if(priority.checked)a.forEach(x=>x.priority=false);t.priority=priority.checked;a.push(t)}else{if(priority.checked)a.forEach(x=>x.priority=false);t.priority=priority.checked}}else{if(priority.checked)a.forEach(x=>x.priority=false);a.push({id:crypto.randomUUID(),text,done:false,priority:priority.checked})}save();close();render()};
 document.getElementById("deleteTask").onclick=()=>{if(!editing?.id)return;state[editing.day]=tasks(editing.day).filter(t=>t.id!==editing.id);save();close();render()};document.getElementById("globalAdd").onclick=()=>open(key(monday(offset)));modal.onclick=e=>{if(e.target===modal)close()};input.onkeydown=e=>{if(e.key==="Enter")document.getElementById("saveTask").click();if(e.key==="Escape")close()};
 render();
+
+/* ===== v0.5 Focus Week ===== */
+(function () {
+  const KEY = "personal-planner-v05-focus";
+  let items = JSON.parse(localStorage.getItem(KEY) || "[]");
+
+  const save = () => localStorage.setItem(KEY, JSON.stringify(items));
+
+  function card() {
+    return document.querySelector("#focusCard, .focus-card") ||
+      [...document.querySelectorAll("article,section,div")].find(el =>
+        /Фокус недели/.test(el.textContent || "") &&
+        [...el.querySelectorAll("button")].some(b => /Добавить/.test(b.textContent || ""))
+      );
+  }
+
+  function modal() {
+    let m = document.getElementById("focusModal");
+    if (m) return m;
+    m = document.createElement("div");
+    m.id = "focusModal";
+    m.className = "modal hidden";
+    m.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2>Фокус недели</h2>
+          <button class="modal-close" id="closeFocus">×</button>
+        </div>
+        <label class="field">
+          <span>Пункт</span>
+          <input id="focusInput" maxlength="100" placeholder="Что главное на этой неделе?">
+        </label>
+        <div class="modal-actions">
+          <button class="save-btn" id="saveFocus">Сохранить</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    m.addEventListener("click", e => { if (e.target === m) m.classList.add("hidden"); });
+    document.getElementById("closeFocus").onclick = () => m.classList.add("hidden");
+    document.getElementById("saveFocus").onclick = () => {
+      const input = document.getElementById("focusInput");
+      const value = input.value.trim();
+      if (!value || items.length >= 3) return;
+      items.push(value); save(); input.value = ""; m.classList.add("hidden"); render();
+    };
+    document.getElementById("focusInput").onkeydown = e => {
+      if (e.key === "Enter") document.getElementById("saveFocus").click();
+      if (e.key === "Escape") m.classList.add("hidden");
+    };
+    return m;
+  }
+
+  function render() {
+    const c = card();
+    if (!c) return;
+    c.classList.add("focus-card");
+
+    const h = [...c.querySelectorAll("h1,h2,h3")].find(x => /Фокус недели/.test(x.textContent || ""));
+    if (!h) return;
+
+    let list = c.querySelector(".focus-list");
+    if (!list) {
+      list = document.createElement("div");
+      list.className = "focus-list";
+      h.insertAdjacentElement("afterend", list);
+    }
+    list.innerHTML = "";
+
+    items.slice(0,3).forEach((text, i) => {
+      const b = document.createElement("button");
+      b.className = "focus-item";
+      b.textContent = `${i+1}. ${text}`;
+      b.onclick = () => {
+        const next = prompt("Изменить пункт фокуса:", text);
+        if (next === null) return;
+        const value = next.trim();
+        if (!value) return;
+        items[i] = value; save(); render();
+      };
+      list.appendChild(b);
+    });
+
+    let add = c.querySelector(".add-focus") ||
+      [...c.querySelectorAll("button")].find(b => /Добавить/.test(b.textContent || ""));
+    if (add) {
+      add.classList.add("add-focus");
+      add.onclick = () => { if (items.length < 3) { modal().classList.remove("hidden"); setTimeout(()=>document.getElementById("focusInput")?.focus(),0); } };
+      add.style.display = items.length >= 3 ? "none" : "";
+    }
+  }
+
+  // Refresh after the existing v0.4 renderer.
+  const oldRender = window.render;
+  if (typeof oldRender === "function") {
+    window.render = function () { oldRender(); setTimeout(render, 0); };
+  }
+  document.addEventListener("click", e => {
+    if (e.target.closest(".view-tab")) setTimeout(render, 30);
+  });
+  setTimeout(render, 100);
+})();
