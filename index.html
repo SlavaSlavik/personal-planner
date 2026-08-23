@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app">
-  <header class="topbar" id="topbar">
+<main class="app" id="app">
+  <header class="topbar">
     <button class="menu-btn" id="menuBtn" aria-label="Меню">☰</button>
     <div class="period-title"><h1 id="periodTitle"></h1><button class="period-caret" id="periodCaret" aria-label="Выбрать период">⌄</button></div>
     <div class="period-actions">
@@ -24,16 +24,20 @@
     <button class="more-btn" id="moreBtn">•••</button>
   </div>
 
-  <section class="month-page" id="monthPage">
-    <div class="calendar-weekdays"><span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span></div>
-    <div class="calendar-grid" id="calendarGrid"></div>
-  </section>
+  <div class="content-surface" id="contentSurface">
+    <section class="month-page" id="monthPage">
+      <div class="calendar-weekdays"><span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span></div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </section>
 
-  <section class="week-page hidden" id="weekPage">
-    <section class="week-grid" id="weekGrid"></section>
-  </section>
-  <section class="focus-page hidden" id="focusPage"></section>
-<button class="floating-add hidden" id="floatingAdd" aria-label="Добавить задачу">＋</button>
+    <section class="week-page hidden" id="weekPage">
+      <section class="week-grid" id="weekGrid"></section>
+    </section>
+
+    <section class="focus-page hidden" id="focusPage"></section>
+  </div>
+
+  <button class="floating-add hidden" id="floatingAdd" aria-label="Добавить задачу">＋</button>
 </main>
 
 <nav class="bottom-nav">
@@ -53,7 +57,7 @@
 </div>
 
 <div class="modal hidden" id="taskModal">
-  <div class="modal-card">
+  <div class="modal-card task-modal-card">
     <div class="modal-head"><h2 id="modalTitle">Новая задача</h2><button class="modal-close" id="closeModal">×</button></div>
     <label class="field"><span>Дата</span><input id="dateInput" type="date"></label>
     <label class="field"><span>Задача</span><input id="taskInput" maxlength="120" placeholder="Например, тренировка"></label>
