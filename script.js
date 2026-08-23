@@ -25,7 +25,7 @@ normalizeState();
 
 function weekData(){const k=key(monday(weekOffset));if(!state.weeks[k])state.weeks[k]={focus:["","",""],sideTasks:[],thoughts:"",result:{win:"",lesson:"",carry:""}};const w=state.weeks[k];if(!Array.isArray(w.focus))w.focus=["","",""];while(w.focus.length<3)w.focus.push("");w.focus=w.focus.slice(0,3);if(!Array.isArray(w.sideTasks))w.sideTasks=[];if(!w.result)w.result={win:"",lesson:"",carry:""};for(const k of ["win","lesson","carry"])if(w.result[k]===undefined)w.result[k]="";return w}
 function toChecklist(value){if(Array.isArray(value))return value.map(x=>typeof x==="string"?{id:uid(),text:x,done:false}:({...x,id:x.id||uid(),text:x.text||"",done:!!x.done}));return []}
-function monthData(){const d=monthDate(monthOffset),k=monthKey(d);if(!state.months[k])state.months[k]={focus:"",goals:[],plans:[],spheres:{finance:[],blog:[],personal:[],health:[]},notes:""};const m=state.months[k];m.goals=toChecklist(m.goals);m.plans=toChecklist(m.plans);if(!m.spheres)m.spheres={};for(const s of ["finance","blog","personal","health"]){m.spheres[s]=toChecklist(m.spheres[s]);}if(m.notes===undefined)m.notes="";return m}
+function monthData(){const d=monthDate(monthOffset),k=monthKey(d);if(!state.months[k])state.months[k]={focus:"",spheres:{finance:{goal:"",items:[]},blog:{goal:"",items:[]},personal:{goal:"",items:[]},health:{goal:"",items:[]}},notes:""};const m=state.months[k];if(m.focus===undefined)m.focus="";if(!m.spheres)m.spheres={};for(const s of ["finance","blog","personal","health"]){const v=m.spheres[s];if(Array.isArray(v)){m.spheres[s]={goal:"",items:toChecklist(v)}}else{m.spheres[s]={goal:v?.goal||"",items:toChecklist(v?.items||[])}}}if(m.notes===undefined)m.notes="";return m}
 
 function renderHeader(){
   if(section==="month"){
@@ -78,49 +78,62 @@ function refreshAfterTask(){closeTask();if(dayModalKey)renderDayList();if(sectio
 function renderFocus(){
   const w=weekData();focusPage.className="focus-page";
   focusPage.innerHTML=`
-    <section class="focus-block"><div class="focus-title"><h2>Фокус недели</h2></div><div class="focus-list" id="focusList"></div><button class="focus-add" id="addFocus">＋ Добавить</button></section>
-    <section class="focus-block"><div class="focus-title"><h2>Задачи</h2></div><div class="focus-list" id="sideList"></div><button class="focus-add-task" id="addSide">＋ Добавить задачу</button></section>
+    <section class="focus-block week-focus-main"><div class="focus-title"><h2>Фокус недели</h2></div><div class="focus-list" id="focusList"></div><button class="focus-add" id="addFocus">＋ Добавить</button></section>
+    <section class="focus-block week-tasks-block"><div class="focus-title"><h2>Задачи</h2></div><div class="focus-list side-task-list" id="sideList"></div><button class="focus-add-task" id="addSide">＋ Добавить задачу</button></section>
     <section class="focus-block"><div class="focus-title"><h2>Мысли</h2></div><textarea class="focus-note" id="thoughts"></textarea></section>
     <section class="focus-block"><div class="focus-title"><h2>Итог</h2></div><div class="result-list"><label class="result-field"><span>Победа</span><textarea id="win"></textarea></label><label class="result-field"><span>Урок недели</span><textarea id="lesson"></textarea></label><label class="result-field"><span>Перенос</span><textarea id="carry"></textarea></label></div></section>`;
-  const list=$("focusList");w.focus.forEach((text,i)=>{const item=document.createElement("div");item.className="focus-item";item.innerHTML=`<span>${i+1}.</span><input type="text" maxlength="120"><button class="remove-focus" aria-label="Удалить">×</button>`;const field=item.querySelector("input");field.value=text;field.oninput=e=>{w.focus[i]=e.target.value;save()};item.querySelector(".remove-focus").onclick=()=>{w.focus.splice(i,1);while(w.focus.length<3)w.focus.push("");save();renderFocus()};list.appendChild(item)});
-  $("addFocus").style.display=w.focus.filter(Boolean).length>=3?"none":"block";$("addFocus").onclick=()=>{const i=w.focus.findIndex(x=>!x);if(i>=0){const fields=list.querySelectorAll("input");fields[i]?.focus();return}w.focus.push("");save();renderFocus();setTimeout(()=>list.querySelector("input:last-of-type")?.focus(),0)};
-  const side=$("sideList");w.sideTasks.forEach((t,i)=>{const row=document.createElement("div");row.className="side-task";row.innerHTML=`<input type="checkbox" ${t.done?"checked":""}><button></button><button class="remove-focus" aria-label="Удалить">×</button>`;row.querySelector("button").textContent=t.text;row.querySelector("input").onchange=e=>{t.done=e.target.checked;save()};row.querySelector("button").onclick=()=>{const text=prompt("Изменить задачу",t.text);if(text!==null&&text.trim()){t.text=text.trim();save();renderFocus()}};row.querySelector(".remove-focus").onclick=()=>{w.sideTasks.splice(i,1);save();renderFocus()};side.appendChild(row)});
-  $("addSide").onclick=()=>{const row=document.createElement("div");row.className="side-task add-inline";row.innerHTML=`<input class="new-side-input" maxlength="120" placeholder="Новая задача"><button class="save-inline">Готово</button>`;side.appendChild(row);const el=row.querySelector(".new-side-input");el.focus();const finish=()=>{const text=el.value.trim();if(text)w.sideTasks.push({id:uid(),text,done:false});save();renderFocus()};row.querySelector(".save-inline").onclick=finish;el.onkeydown=e=>{if(e.key==="Enter")finish();if(e.key==="Escape")renderFocus()}};
-  $("thoughts").value=w.thoughts;$("thoughts").oninput=()=>{w.thoughts=$("thoughts").value;save()};
+
+  const list=$("focusList");w.focus.forEach((text,i)=>{
+    const item=document.createElement("div");item.className=`focus-item focus-color-${i%COLORS.length}`;
+    item.innerHTML=`<span class="focus-index">${i+1}.</span><input type="text" maxlength="120"><button class="remove-focus" aria-label="Удалить">×</button>`;
+    const field=item.querySelector("input");field.value=text;field.oninput=e=>{w.focus[i]=e.target.value;save()};
+    item.querySelector(".remove-focus").onclick=()=>{w.focus.splice(i,1);while(w.focus.length<3)w.focus.push("");save();renderFocus()};list.appendChild(item)
+  });
+  $("addFocus").style.display=w.focus.filter(Boolean).length>=3?"none":"block";
+  $("addFocus").onclick=()=>{const i=w.focus.findIndex(x=>!x);if(i>=0){list.querySelectorAll("input")[i]?.focus();return}w.focus.push("");save();renderFocus();setTimeout(()=>list.querySelector("input:last-of-type")?.focus(),0)};
+
+  const side=$("sideList");
+  w.sideTasks.forEach((t,i)=>{
+    if(!t.color)t.color=COLORS[i%COLORS.length];
+    const row=document.createElement("div");row.className="side-task";row.style.setProperty("--task-tint",t.color);
+    row.innerHTML=`<span class="side-task-dot" title="Цвет задачи"></span><input class="side-task-check" type="checkbox" ${t.done?"checked":""}><button class="side-task-text"></button><button class="remove-focus" aria-label="Удалить">×</button>`;
+    row.querySelector(".side-task-text").textContent=t.text;
+    row.querySelector(".side-task-check").onchange=e=>{t.done=e.target.checked;save();row.classList.toggle("done",t.done)};
+    row.querySelector(".side-task-text").onclick=()=>{const text=prompt("Изменить задачу",t.text);if(text!==null&&text.trim()){t.text=text.trim();save();renderFocus()}};
+    row.querySelector(".side-task-dot").onclick=e=>{e.stopPropagation();const n=COLORS.indexOf(t.color);t.color=COLORS[(n+1+COLORS.length)%COLORS.length];save();renderFocus()};
+    row.querySelector(".remove-focus").onclick=()=>{w.sideTasks.splice(i,1);save();renderFocus()};side.appendChild(row)
+  });
+  $("addSide").onclick=()=>{
+    if(side.querySelector(".add-inline"))return;
+    const row=document.createElement("div");row.className="side-task add-inline";row.style.setProperty("--task-tint",COLORS[w.sideTasks.length%COLORS.length]);
+    row.innerHTML=`<span class="side-task-dot"></span><input class="new-side-input" maxlength="120" placeholder="Новая задача"><button class="save-inline">Готово</button>`;
+    side.appendChild(row);const el=row.querySelector(".new-side-input");setTimeout(()=>{el.focus();el.scrollIntoView({block:"nearest"})},0);
+    const finish=()=>{const text=el.value.trim();if(!text)return;w.sideTasks.push({id:uid(),text,done:false,color:COLORS[w.sideTasks.length%COLORS.length]});save();renderFocus()};
+    row.querySelector(".save-inline").onclick=finish;el.onkeydown=e=>{if(e.key==="Enter")finish();if(e.key==="Escape")renderFocus()}
+  };
+  $("thoughts").value=w.thoughts;$ ("thoughts").oninput=()=>{w.thoughts=$("thoughts").value;save()};
   ["win","lesson","carry"].forEach(k=>{$(k).value=w.result[k];$(k).oninput=()=>{w.result[k]=$(k).value;save()}});
 }
 
 function renderMonthFocus(){
   const m=monthData();focusPage.className="month-focus-page";
   focusPage.innerHTML=`
-    <section class="focus-block month-focus-hero"><div class="focus-title"><h2>ФОКУС МЕСЯЦА</h2></div><textarea class="focus-note" id="monthFocus" placeholder="На чём мой главный фокус в этом месяце?"></textarea></section>
-    <div class="month-focus-columns">
-      <section class="focus-block month-list-block"><div class="focus-title"><h2>ЦЕЛИ</h2></div><div class="month-list" id="monthGoals"></div><button class="block-add" id="addGoal">＋ Добавить цель</button></section>
-      <section class="focus-block month-list-block"><div class="focus-title"><h2>ПЛАНЫ</h2></div><div class="month-list" id="monthPlans"></div><button class="block-add" id="addPlan">＋ Добавить план</button></section>
-    </div>
-    <section class="focus-block sphere-block"><div class="focus-title"><h2>СФЕРЫ ЖИЗНИ</h2></div><div class="sphere-grid">
-      <div class="sphere-card finance"><div class="sphere-head"><div class="sphere-icon">▱</div><div class="sphere-name">ФИНАНСЫ</div></div><div class="sphere-list" id="sphere-finance"></div><button class="block-add" data-sphere="finance">＋ Добавить</button></div>
-      <div class="sphere-card blog"><div class="sphere-head"><div class="sphere-icon">▷</div><div class="sphere-name">БЛОГ</div></div><div class="sphere-list" id="sphere-blog"></div><button class="block-add" data-sphere="blog">＋ Добавить</button></div>
-      <div class="sphere-card personal"><div class="sphere-head"><div class="sphere-icon">♡</div><div class="sphere-name">ЛИЧНОЕ</div></div><div class="sphere-list" id="sphere-personal"></div><button class="block-add" data-sphere="personal">＋ Добавить</button></div>
-      <div class="sphere-card health"><div class="sphere-head"><div class="sphere-icon">♢</div><div class="sphere-name">ЗДОРОВЬЕ</div></div><div class="sphere-list" id="sphere-health"></div><button class="block-add" data-sphere="health">＋ Добавить</button></div>
+    <section class="focus-block month-focus-hero"><div class="focus-title"><h2>ФОКУС МЕСЯЦА</h2><span class="focus-target">◎</span></div><textarea class="focus-note" id="monthFocus" placeholder="На чём мой главный фокус в этом месяце?"></textarea></section>
+    <section class="month-spheres-section"><div class="focus-title month-section-title"><h2>СФЕРЫ ЖИЗНИ</h2><span class="section-flower">♧</span></div><div class="month-sphere-grid">
+      <div class="month-sphere finance"><div class="sphere-head"><span class="sphere-icon">▱</span><span class="sphere-name">ФИНАНСЫ</span><button class="sphere-more" aria-label="Меню сферы">•••</button></div><label class="sphere-goal-label">Цель: <input id="goal-finance" maxlength="120" placeholder="Главная цель"></label><div class="sphere-list" id="sphere-finance"></div><button class="block-add" data-sphere="finance">＋ Добавить</button></div>
+      <div class="month-sphere blog"><div class="sphere-head"><span class="sphere-icon">▷</span><span class="sphere-name">БЛОГ</span><button class="sphere-more" aria-label="Меню сферы">•••</button></div><label class="sphere-goal-label">Цель: <input id="goal-blog" maxlength="120" placeholder="Главная цель"></label><div class="sphere-list" id="sphere-blog"></div><button class="block-add" data-sphere="blog">＋ Добавить</button></div>
+      <div class="month-sphere personal"><div class="sphere-head"><span class="sphere-icon">♡</span><span class="sphere-name">ЛИЧНОЕ</span><button class="sphere-more" aria-label="Меню сферы">•••</button></div><label class="sphere-goal-label">Цель: <input id="goal-personal" maxlength="120" placeholder="Главная цель"></label><div class="sphere-list" id="sphere-personal"></div><button class="block-add" data-sphere="personal">＋ Добавить</button></div>
+      <div class="month-sphere health"><div class="sphere-head"><span class="sphere-icon">♢</span><span class="sphere-name">ЗДОРОВЬЕ</span><button class="sphere-more" aria-label="Меню сферы">•••</button></div><label class="sphere-goal-label">Цель: <input id="goal-health" maxlength="120" placeholder="Главная цель"></label><div class="sphere-list" id="sphere-health"></div><button class="block-add" data-sphere="health">＋ Добавить</button></div>
     </div></section>
-    <section class="focus-block notes-block"><div class="focus-title"><h2>ЗАМЕТКИ</h2></div><textarea class="focus-note" id="monthNotes" placeholder="Любые мысли, идеи, важные заметки..."></textarea></section>`;
-  $("monthFocus").value=m.focus||"";$("monthFocus").oninput=()=>{m.focus=$("monthFocus").value;save()};$("monthNotes").value=m.notes||"";$("monthNotes").oninput=()=>{m.notes=$("monthNotes").value;save()};
-  renderMonthList("monthGoals",m.goals,"goal");renderMonthList("monthPlans",m.plans,"plan");
-  $("addGoal").onclick=()=>addMonthItem(m.goals,"monthGoals");$("addPlan").onclick=()=>addMonthItem(m.plans,"monthPlans");
-  for(const s of ["finance","blog","personal","health"]){renderSphere(s,m.spheres[s]);focusPage.querySelector(`[data-sphere="${s}"]`).onclick=()=>addSphereItem(s,m)}
+    <section class="focus-block notes-block"><div class="focus-title"><h2>ЗАМЕТКИ</h2><span class="notes-icon">▤</span></div><textarea class="focus-note" id="monthNotes" placeholder="Любые мысли, идеи, важные заметки..."></textarea></section>`;
+  $("monthFocus").value=m.focus||"";$("monthFocus").oninput=()=>{m.focus=$("monthFocus").value;save()};
+  $("monthNotes").value=m.notes||"";$("monthNotes").oninput=()=>{m.notes=$("monthNotes").value;save()};
+  for(const s of ["finance","blog","personal","health"]){
+    const data=m.spheres[s];const goal=$("goal-"+s);goal.value=data.goal||"";goal.oninput=()=>{data.goal=goal.value;save()};
+    renderSphere(s,data.items);focusPage.querySelector(`[data-sphere="${s}"]`).onclick=()=>addSphereItem(s,m);
+  }
 }
-function renderMonthList(id,arr){
-  const box=$(id);box.innerHTML="";
-  arr.forEach((item,i)=>{
-    const row=document.createElement("div");row.className="check-item"+(item.done?" done":"");
-    row.innerHTML=`<input type="checkbox" ${item.done?"checked":""}><input class="check-text-input" type="text" maxlength="120" placeholder="Добавить пункт"><button class="item-delete" aria-label="Удалить">×</button>`;
-    const text=row.querySelector(".check-text-input");text.value=item.text||"";text.oninput=()=>{item.text=text.value;save()};text.onblur=()=>{if(!item.text.trim()&&arr.length>1){arr.splice(i,1);save();renderMonthFocus()}};
-    row.querySelector("input[type=checkbox]").onchange=e=>{item.done=e.target.checked;save();row.classList.toggle("done",item.done)};
-    row.querySelector(".item-delete").onclick=()=>{arr.splice(i,1);save();renderMonthFocus()};box.appendChild(row)
-  });
-}
-function addMonthItem(arr,id){arr.push({id:uid(),text:"",done:false});save();renderMonthFocus();setTimeout(()=>{const box=$(id);const inputs=box?.querySelectorAll(".check-text-input");inputs?.[inputs.length-1]?.focus()},0)}
+
 function renderSphere(s,mItems){
   const box=$("sphere-"+s);box.innerHTML="";
   mItems.forEach((item,i)=>{
@@ -131,7 +144,7 @@ function renderSphere(s,mItems){
     row.querySelector(".item-delete").onclick=()=>{mItems.splice(i,1);save();renderMonthFocus()};box.appendChild(row)
   })
 }
-function addSphereItem(s,m){m.spheres[s].push({id:uid(),text:"",done:false});save();renderMonthFocus();setTimeout(()=>{$("sphere-"+s).querySelector(".check-text-input:last-of-type")?.focus()},0)}
+function addSphereItem(s,m){m.spheres[s].items.push({id:uid(),text:"",done:false});save();renderMonthFocus();setTimeout(()=>{$("sphere-"+s).querySelector(".check-text-input:last-of-type")?.focus()},0)}
 
 function setSection(next){section=next;view="primary";$("floatingAdd").classList.toggle("hidden",section!=="month");$("monthNav").classList.toggle("selected",section==="month");$("weekNav").classList.toggle("selected",section==="week");$("primaryTab").textContent=section==="month"?"Месяц":"Разворот";$("secondaryTab").textContent="Фокус";if(section==="month"){$("monthPage").classList.remove("hidden");$("weekPage").classList.add("hidden");$("focusPage").classList.add("hidden");renderMonth()}else{$("monthPage").classList.add("hidden");$("weekPage").classList.remove("hidden");$("focusPage").classList.add("hidden");renderWeek()}renderHeader()}
 function setView(next){view=next;$("primaryTab").classList.toggle("active",view==="primary");$("secondaryTab").classList.toggle("active",view==="secondary");if(section==="month"){$("monthPage").classList.toggle("hidden",view!=="primary");$("weekPage").classList.add("hidden");$("focusPage").classList.toggle("hidden",view!=="secondary");if(view==="secondary")renderMonthFocus()}else{$("monthPage").classList.add("hidden");$("weekPage").classList.toggle("hidden",view!=="primary");$("focusPage").classList.toggle("hidden",view!=="secondary");if(view==="secondary")renderFocus()}}
