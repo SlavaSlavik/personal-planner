@@ -3,54 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Ежедневник</title>
+<title>Ежедневник — v0.6</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main class="app">
-  <header class="topbar">
-    <button class="icon-btn" id="prevWeek" aria-label="Предыдущая неделя">‹</button>
-    <div class="week-title"><h1 id="weekTitle"></h1></div>
-    <button class="icon-btn" id="nextWeek" aria-label="Следующая неделя">›</button>
+  <header class="topbar" id="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Меню">☰</button>
+    <div class="period-title"><h1 id="periodTitle"></h1><button class="period-caret" id="periodCaret" aria-label="Выбрать период">⌄</button></div>
+    <div class="period-actions">
+      <button class="today-btn" id="todayBtn">Сегодня</button>
+      <button class="icon-btn" id="prevPeriod" aria-label="Предыдущий период">‹</button>
+      <button class="icon-btn" id="nextPeriod" aria-label="Следующий период">›</button>
+    </div>
   </header>
 
-  <div class="view-switch">
-    <button class="view-tab active" id="spreadTab">Разворот</button>
-    <button class="view-tab" id="focusTab">Фокус</button>
+  <div class="view-switch" id="viewSwitch">
+    <button class="view-tab active" id="primaryTab">Месяц</button>
+    <button class="view-tab" id="secondaryTab">Фокус</button>
     <button class="more-btn" id="moreBtn">•••</button>
   </div>
 
-  <section class="week-grid" id="weekGrid"></section>
+  <section class="month-page" id="monthPage">
+    <div class="calendar-weekdays"><span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span></div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </section>
+
+  <section class="week-page hidden" id="weekPage">
+    <section class="week-grid" id="weekGrid"></section>
+  </section>
   <section class="focus-page hidden" id="focusPage"></section>
+<button class="floating-add hidden" id="floatingAdd" aria-label="Добавить задачу">＋</button>
 </main>
 
 <nav class="bottom-nav">
-  <button><span class="nav-icon">▣</span><span>Месяц</span></button>
-  <button class="selected"><span class="nav-icon">▢</span><span>Неделя</span></button>
+  <button class="selected" id="monthNav"><span class="nav-icon">▣</span><span>Месяц</span></button>
+  <button id="weekNav"><span class="nav-icon">▢</span><span>Неделя</span></button>
   <button class="add-main" id="globalAdd" aria-label="Добавить задачу">＋</button>
-  <button><span class="nav-icon">♧</span><span>Привычки</span></button>
-  <button><span class="nav-icon">▷</span><span>Блог</span></button>
+  <button id="habitsNav"><span class="nav-icon">♧</span><span>Привычки</span></button>
+  <button id="blogNav"><span class="nav-icon">▷</span><span>Блог</span></button>
 </nav>
+
+<div class="modal hidden" id="dayModal">
+  <div class="modal-card day-modal-card">
+    <div class="modal-head"><div><div class="modal-kicker">День</div><h2 id="dayModalTitle"></h2></div><button class="modal-close" id="closeDayModal">×</button></div>
+    <div class="day-task-list" id="dayTaskList"></div>
+    <button class="modal-add-task" id="dayAddTask">＋ Добавить задачу</button>
+  </div>
+</div>
 
 <div class="modal hidden" id="taskModal">
   <div class="modal-card">
-    <div class="modal-head">
-      <h2 id="modalTitle">Новая задача</h2>
-      <button class="modal-close" id="closeModal">×</button>
-    </div>
-    <label class="field">
-      <span>Дата</span>
-      <select id="dateInput"></select>
-    </label>
-    <label class="field">
-      <span>Задача</span>
-      <input id="taskInput" maxlength="120" placeholder="Например, тренировка">
-    </label>
+    <div class="modal-head"><h2 id="modalTitle">Новая задача</h2><button class="modal-close" id="closeModal">×</button></div>
+    <label class="field"><span>Дата</span><input id="dateInput" type="date"></label>
+    <label class="field"><span>Задача</span><input id="taskInput" maxlength="120" placeholder="Например, тренировка"></label>
+    <div class="field"><span>Отображать</span><div class="checks"><label><input id="plannerInput" type="checkbox"> Планер</label><label><input id="calendarInput" type="checkbox"> Календарь</label></div></div>
+    <div class="field"><span>Цвет календаря</span><div class="color-palette" id="colorPalette"></div></div>
     <label class="star-option"><input id="priorityInput" type="checkbox"> <span>★ Сделать главной задачей дня</span></label>
-    <div class="modal-actions">
-      <button class="delete-btn hidden" id="deleteTask">Удалить</button>
-      <button class="save-btn" id="saveTask">Сохранить</button>
-    </div>
+    <div class="modal-actions"><button class="delete-btn hidden" id="deleteTask">Удалить</button><button class="save-btn" id="saveTask">Сохранить</button></div>
   </div>
 </div>
 
