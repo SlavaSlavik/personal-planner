@@ -1,73 +1,34 @@
 <!doctype html>
 <html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Ежедневник — v0.6</title>
-<link rel="stylesheet" href="style.css">
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff8f7"><title>Личный ежедневник</title><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"></head>
 <body>
 <main class="app" id="app">
   <header class="topbar">
-    <button class="menu-btn" id="menuBtn" aria-label="Меню">☰</button>
-    <div class="period-title"><h1 id="periodTitle"></h1><button class="period-caret" id="periodCaret" aria-label="Выбрать период">⌄</button></div>
-    <div class="period-actions">
-      <button class="today-btn" id="todayBtn">Сегодня</button>
-      <button class="icon-btn" id="prevPeriod" aria-label="Предыдущий период">‹</button>
-      <button class="icon-btn" id="nextPeriod" aria-label="Следующий период">›</button>
-    </div>
+    <button class="icon-btn" id="menuBtn" aria-label="Настройки" data-icon="settings"></button>
+    <button class="period-title" id="periodCaret" aria-label="Выбрать период"><h1 id="periodTitle"></h1><span data-icon="chevronDown"></span></button>
+    <button class="today-btn" id="todayBtn">Сегодня</button>
   </header>
-
-  <div class="view-switch" id="viewSwitch">
-    <button class="view-tab active" id="primaryTab">Месяц</button>
-    <button class="view-tab" id="secondaryTab">Фокус</button>
-    <button class="more-btn" id="moreBtn">•••</button>
+  <div class="period-bar" id="periodBar">
+    <button class="icon-btn" id="prevPeriod" aria-label="Предыдущий период" data-icon="chevronLeft"></button>
+    <div class="view-switch" id="viewSwitch" aria-label="Вид планера"><button class="view-tab active" id="primaryTab" aria-pressed="true">Месяц</button><button class="view-tab" id="secondaryTab" aria-pressed="false">Фокус</button></div>
+    <button class="icon-btn" id="nextPeriod" aria-label="Следующий период" data-icon="chevronRight"></button>
   </div>
-
+  <div class="status hidden" id="status" role="status"></div>
   <div class="content-surface" id="contentSurface">
-    <section class="month-page" id="monthPage">
-      <div class="calendar-weekdays"><span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span></div>
-      <div class="calendar-grid" id="calendarGrid"></div>
-    </section>
-
-    <section class="week-page hidden" id="weekPage">
-      <section class="week-grid" id="weekGrid"></section>
-    </section>
-
-    <section class="focus-page hidden" id="focusPage"></section>
+    <section id="monthPage" aria-label="Календарь месяца"><div class="calendar-weekdays"><span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span></div><div class="calendar-grid" id="calendarGrid"></div></section>
+    <section class="hidden" id="weekPage" aria-label="Планер недели"><div class="week-grid" id="weekGrid"></div></section>
+    <section class="focus-page hidden" id="focusPage" aria-label="Фокус"></section>
+    <section class="hidden" id="habitsPage" aria-label="Привычки"></section>
+    <section class="hidden" id="stickersPage" aria-label="Стикеры и списки"></section>
   </div>
-
-  <button class="floating-add hidden" id="floatingAdd" aria-label="Добавить задачу">＋</button>
 </main>
-
-<nav class="bottom-nav">
-  <button class="selected" id="monthNav"><span class="nav-icon">▣</span><span>Месяц</span></button>
-  <button id="weekNav"><span class="nav-icon">▢</span><span>Неделя</span></button>
-  <button class="add-main" id="globalAdd" aria-label="Добавить задачу">＋</button>
-  <button id="habitsNav"><span class="nav-icon">♧</span><span>Привычки</span></button>
-  <button id="blogNav"><span class="nav-icon">▷</span><span>Блог</span></button>
+<nav class="bottom-nav" aria-label="Разделы">
+  <button class="selected" id="monthNav" aria-current="page"><span data-icon="calendar"></span><span>Месяц</span></button>
+  <button id="weekNav"><span data-icon="planner"></span><span>Неделя</span></button>
+  <button class="add-main" id="globalAdd" aria-label="Добавить задачу" data-icon="plus"></button>
+  <button id="habitsNav"><span data-icon="leaf"></span><span>Привычки</span></button>
+  <button id="stickersNav"><span data-icon="note"></span><span>Стикеры</span></button>
 </nav>
-
-<div class="modal hidden" id="dayModal">
-  <div class="modal-card day-modal-card">
-    <div class="modal-head"><div><div class="modal-kicker">День</div><h2 id="dayModalTitle"></h2></div><button class="modal-close" id="closeDayModal">×</button></div>
-    <div class="day-task-list" id="dayTaskList"></div>
-    <button class="modal-add-task" id="dayAddTask">＋ Добавить задачу</button>
-  </div>
-</div>
-
-<div class="modal hidden" id="taskModal">
-  <div class="modal-card task-modal-card">
-    <div class="modal-head"><h2 id="modalTitle">Новая задача</h2><button class="modal-close" id="closeModal">×</button></div>
-    <label class="field"><span>Дата</span><input id="dateInput" type="date"></label>
-    <label class="field"><span>Задача</span><input id="taskInput" maxlength="120" placeholder="Например, тренировка"></label>
-    <div class="field"><span>Отображать</span><div class="checks"><label><input id="plannerInput" type="checkbox"> Планер</label><label><input id="calendarInput" type="checkbox"> Календарь</label></div></div>
-    <div class="field"><span>Цвет календаря</span><div class="color-palette" id="colorPalette"></div></div>
-    <label class="star-option"><input id="priorityInput" type="checkbox"> <span>★ Сделать главной задачей дня</span></label>
-    <div class="modal-actions"><button class="delete-btn hidden" id="deleteTask">Удалить</button><button class="save-btn" id="saveTask">Сохранить</button></div>
-  </div>
-</div>
-
-<script src="script.js"></script>
-</body>
-</html>
+<div id="dialogs"></div>
+<script src="model.js"></script><script src="script.js"></script>
+</body></html>
