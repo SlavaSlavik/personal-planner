@@ -2,10 +2,11 @@
 const M=PlannerModel,$=id=>document.getElementById(id);
 const DAYS=['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];
 const MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const COLOR_NAMES=['Розовый','Лиловый','Лавандовый','Персиковый','Бежевый','Мятный'];
+const COLOR_NAMES=['Розовый','Насыщенный розовый','Малиновый','Лиловый','Персиковый','Бежевый'];
 const KEY='personal-planner-v06',OLD_KEYS=['personal-planner-v04','personal-planner-v03','personal-planner-v02'];
 const PATHS={
   plus:'M12 5v14M5 12h14',minus:'M5 12h14',close:'m6 6 12 12M18 6 6 18',
+  menu:'M5 6h14M5 12h14M5 18h14',more:'M5 12h.01M12 12h.01M19 12h.01',
   chevronLeft:'m15 5-7 7 7 7',chevronRight:'m9 5 7 7-7 7',chevronDown:'m6 9 6 6 6-6',
   calendar:'M8 3v4M16 3v4M4 10h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1M8 14h2M14 14h2M8 18h2',
   planner:'M8 3h11v18H8a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3ZM8 3v18M12 8h4M12 12h4M12 16h3',
@@ -65,7 +66,7 @@ function save(){
     const raw=JSON.stringify(state);localStorage.setItem(KEY,raw);lastRaw=raw;return true;
   }catch{status('Не удалось сохранить записи в браузере. Сохраните копию в настройках.');return false}
 }
-function applyPreferences(){document.documentElement.style.setProperty('--base',state.preferences.largeText?'18px':'16px');document.documentElement.classList.toggle('large-text',!!state.preferences.largeText);$('largeText').checked=!!state.preferences.largeText}
+function applyPreferences(){document.documentElement.style.setProperty('--base',state.preferences.largeText?'15px':'14px');document.documentElement.classList.toggle('large-text',!!state.preferences.largeText);$('largeText').checked=!!state.preferences.largeText}
 function transact(fn){const before=state;state=M.normalize(state);fn();if(save())return true;state=before;return false}
 function openDialog(id,focusId){const d=$(id);if(!d.open)d.showModal();if(focusId)$(focusId).focus()}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
@@ -79,10 +80,10 @@ function shortDate(day){return M.date(day).toLocaleDateString('ru-RU',{day:'nume
 function weekLabel(start){const end=M.addDays(start,6),a=M.date(start),b=M.date(end);if(a.getFullYear()!==b.getFullYear())return `${shortDate(start)} ${a.getFullYear()} — ${shortDate(end)} ${b.getFullYear()}`;return `${a.getMonth()===b.getMonth()?a.getDate():shortDate(start)} — ${shortDate(end)} ${b.getFullYear()}`}
 function renderHeader(){
   const d=M.date(period());
-  $('periodTitle').textContent=section==='stickers'?'Стикеры':section==='habits'?'Привычки':section==='month'?`${MONTHS[d.getMonth()]} ${d.getFullYear()}`:weekLabel(weekAnchor);
-  $('periodCaret').disabled=section==='stickers';$('periodCaret').querySelector('[data-icon]').classList.toggle('hidden',section==='stickers');$('todayBtn').classList.toggle('hidden',section==='stickers');$('periodBar').classList.toggle('hidden',section==='stickers');
+  $('periodTitle').textContent=section==='stickers'?'Стикеры':section==='habits'?'Привычки':section==='month'?`${MONTHS[d.getMonth()]} ${d.getFullYear()}`:weekLabel(weekAnchor).replace(/\s\d{4}$/,'');
+  $('periodCaret').disabled=section==='stickers';$('periodCaret').querySelector('[data-icon]').classList.toggle('hidden',section==='stickers');$('todayBtn').classList.toggle('hidden',section==='stickers'||section==='week');$('prevPeriod').classList.toggle('hidden',section==='stickers');$('nextPeriod').classList.toggle('hidden',section==='stickers');$('periodBar').classList.toggle('hidden',section==='stickers');
   $('viewSwitch').classList.toggle('hidden',section==='habits');let label=$('habitPeriodLabel');
-  if(!label){label=document.createElement('div');label.id='habitPeriodLabel';label.className='period-label';$('periodBar').insertBefore(label,$('nextPeriod'))}
+  if(!label){label=document.createElement('div');label.id='habitPeriodLabel';label.className='period-label';$('periodBar').append(label)}
   label.classList.toggle('hidden',section!=='habits');label.textContent=weekLabel(weekAnchor);
   $('primaryTab').textContent=section==='month'?'Месяц':'Разворот';
   for(const[v,id]of [['primary','primaryTab'],['secondary','secondaryTab']]){$(id).classList.toggle('active',view===v);$(id).setAttribute('aria-pressed',String(view===v))}
@@ -106,30 +107,42 @@ function renderMonth(){
   const d=M.date(monthAnchor),start=M.monday(`${monthAnchor.slice(0,7)}-01`),grid=$('calendarGrid');grid.replaceChildren();
   for(let i=0;i<42;i++){
     const day=M.addDays(start,i),x=M.date(day),cell=document.createElement('div');cell.className='calendar-cell'+(x.getMonth()!==d.getMonth()?' outside':'')+(day===M.key(new Date())?' today':'');
-    const num=document.createElement('button');num.className='day-number';num.textContent=x.getDate();num.setAttribute('aria-label',`Открыть ${shortDate(day)} ${x.getFullYear()}`);num.onclick=()=>openDay(day);cell.append(num);
+    const num=document.createElement('button');num.className='day-number';num.textContent=x.getDate();num.setAttribute('aria-label',`Открыть ${shortDate(day)} ${x.getFullYear()}`);num.onclick=()=>openDay(day);
     const list=document.createElement('div');list.className='calendar-tasks';const items=ordered(M.tasksFor(state,day).filter(t=>t.displayCalendar));
-    const max=window.innerWidth<700?2:3;
-    items.slice(0,max).forEach(t=>{const b=document.createElement('button');b.className='calendar-task'+(t.done?' completed':'');b.style.background=t.color;b.textContent=t.text;b.title=t.text;b.setAttribute('aria-label',`${t.text}, ${shortDate(day)}${t.done?', выполнена':''}`);b.onclick=()=>openTask(day,t);list.append(b)});
-    if(items.length>max){const b=document.createElement('button');b.className='calendar-more';b.textContent=`Ещё ${items.length-max}`;b.onclick=()=>openDay(day);list.append(b)}
+    const dayHead=document.createElement('div');dayHead.className='calendar-day-head';dayHead.append(num);cell.append(dayHead);
+    items.forEach(t=>{const b=document.createElement('button');b.className='calendar-task'+(t.done?' completed':'');b.style.background=t.color;b.textContent=t.text;b.title=t.text;b.setAttribute('aria-label',`${t.text}, ${shortDate(day)}${t.done?', выполнена':''}`);b.onclick=()=>openTask(day,t);list.append(b)});
+    const more=document.createElement('button');more.className='calendar-more hidden';more.onclick=()=>openDay(day);dayHead.append(more);
     cell.append(list);cell.onclick=e=>{if(!e.target.closest('button'))openDay(day)};grid.append(cell);
   }
+  fitTaskLists();
 }
 function renderWeek(){
   const grid=$('weekGrid');grid.replaceChildren();
   for(let i=0;i<7;i++){
     const day=M.addDays(weekAnchor,i),c=document.createElement('article');c.className='day-card'+(day===M.key(new Date())?' today':'');
-    c.innerHTML=`<div class="day-head"><h2>${DAYS[i]} <span>${M.date(day).getDate()}</span></h2><button class="icon-btn" aria-label="Открыть ${shortDate(day)}">${icon('chevronRight')}</button></div><div class="tasks"></div><button class="add-task">Добавить задачу</button>`;
+    c.innerHTML=`<div class="day-head"><h2>${DAYS[i]} <span>${M.date(day).getDate()}</span></h2><button class="icon-btn" aria-label="Открыть ${shortDate(day)}">${icon('more')}</button></div><div class="tasks"></div><div class="day-footer"><button class="add-task">＋ Добавить задачу</button></div>`;
     const items=ordered(M.tasksFor(state,day).filter(t=>t.displayPlanner));if(!items.length)c.querySelector('.tasks').innerHTML='<p class="empty-line">Нет задач</p>';
     items.forEach(t=>{
       const r=document.createElement('div');r.className='task-row'+(t.done?' completed':'');
       r.innerHTML=`<input type="checkbox" ${t.done?'checked':''}><button class="task-text"></button>${t.priority?`<span class="priority-star" title="Главная задача">${icon('star')}</span>`:''}${t.seriesId?`<span title="Повторяемая задача">${icon('repeat')}</span>`:''}`;
       const check=r.querySelector('input');check.setAttribute('aria-label',`Выполнено: ${t.text}`);check.onchange=()=>{M.complete(state,t,check.checked);save();r.classList.toggle('completed',check.checked)};
-      r.querySelector('.task-text').textContent=t.text;r.querySelector('.task-text').onclick=()=>openTask(day,t);c.querySelector('.tasks').append(r);
+      r.querySelector('.task-text').textContent=t.text;r.querySelector('.task-text').title=t.text;r.querySelector('.task-text').onclick=()=>openTask(day,t);c.querySelector('.tasks').append(r);
       if(!t.seriesId&&items.filter(x=>!x.seriesId).length>1)enableReorder(r,t,c.querySelector('.tasks'));
     });
+    const more=document.createElement('button');more.className='week-more hidden';more.onclick=()=>openDay(day);c.querySelector('.day-footer').append(more);
     c.querySelector('.day-head button').onclick=()=>openDay(day);c.querySelector('.add-task').onclick=()=>openTask(day);grid.append(c);
   }
+  fitTaskLists();
 }
+function fitTaskLists(){
+  document.querySelectorAll('.calendar-tasks,.day-card .tasks').forEach(list=>{
+    const rows=[...list.children].filter(el=>el.matches('.calendar-task,.task-row')),more=list.parentElement.querySelector('.calendar-more,.week-more');if(!rows.length||!more||!list.clientHeight)return;
+    const style=getComputedStyle(list),height=parseFloat(style.getPropertyValue('--task-row-height')),gap=parseFloat(style.rowGap)||0,capacity=Math.max(0,Math.floor((list.clientHeight+gap)/(height+gap)));
+    const count=Math.min(rows.length,capacity);
+    rows.forEach((el,i)=>el.classList.toggle('hidden',i>=count));more.classList.toggle('hidden',rows.length<=capacity);more.textContent=`+${rows.length-count}`;more.setAttribute('aria-label',`Открыть ещё ${rows.length-count} задач`);
+  });
+}
+new ResizeObserver(fitTaskLists).observe($('contentSurface'));
 function enableReorder(row,item,box){
   row.dataset.taskId=item.id;
   const handle=document.createElement('button');handle.className='reorder-control';handle.innerHTML=icon('up');handle.setAttribute('aria-label',`Поднять задачу: ${item.text}`);row.prepend(handle);
@@ -224,17 +237,16 @@ function checklist(box,items,onRender,label){
 function appendItem(items,render,boxId){items.push(M.task({text:''}));save();render();const inputs=$(boxId).querySelectorAll('[type=text]');inputs[inputs.length-1]?.focus()}
 function renderWeekFocus(){
   const w=weekData(),p=$('focusPage');p.className='focus-page week-focus-layout';
-  p.innerHTML=`<section class="focus-block"><div class="focus-title"><h2>Фокус недели</h2>${icon('target')}</div><div class="focus-list" id="focusList"></div><button class="block-add" id="addFocus">Добавить фокус</button></section><section class="focus-block"><div class="focus-title"><h2>Задачи недели</h2>${icon('planner')}</div><div class="focus-list" id="sideList"></div><button class="block-add" id="addSide">Добавить задачу</button></section>${noteBlock('Мысли недели','thoughts')}<section class="focus-block"><div class="focus-title"><h2>Итоги недели</h2></div><div class="result-grid">${['Победа','Урок недели','Перенести дальше'].map((label,i)=>`<label class="field"><span>${label}</span><textarea class="focus-note" id="${['win','lesson','carry'][i]}"></textarea></label>`).join('')}</div></section>`;
-  w.focus.forEach((text,i)=>{
+  p.innerHTML=`<section class="focus-block"><div class="focus-title"><h2>Фокус недели</h2>${icon('target')}</div><div class="focus-list" id="focusList"></div></section><section class="focus-block"><div class="focus-title"><h2>Задачи недели</h2>${icon('planner')}</div><div class="focus-list" id="sideList"></div><button class="block-add" id="addSide">Добавить задачу</button></section>${noteBlock('Мысли недели','thoughts')}<section class="focus-block"><div class="focus-title"><h2>Итоги недели</h2></div><div class="result-grid">${['Победа','Урок недели','Перенести дальше'].map((label,i)=>`<label class="field"><span>${label}</span><textarea class="focus-note" id="${['win','lesson','carry'][i]}"></textarea></label>`).join('')}</div></section>`;
+  Array.from({length:3},(_,i)=>w.focus[i]||'').forEach((text,i)=>{
     const row=document.createElement('div');row.className='editable-row';row.innerHTML=`<input type="text" maxlength="120" aria-label="Фокус ${i+1}" placeholder="Главное на неделю"><button class="icon-btn" aria-label="Удалить фокус">${icon('close')}</button>`;
-    row.querySelector('input').value=text;row.querySelector('input').oninput=e=>{w.focus[i]=e.target.value;save()};row.querySelector('button').onclick=()=>{const remove=()=>{w.focus.splice(i,1);save();renderWeekFocus()};text.trim()?confirmAction('Удалить фокус?',text,remove):remove()};$('focusList').append(row);
+    row.querySelector('input').value=text;row.querySelector('input').oninput=e=>{w.focus[i]=e.target.value;save()};row.querySelector('button').setAttribute('aria-label',`Очистить фокус ${i+1}`);row.querySelector('button').onclick=()=>{const remove=()=>{w.focus[i]='';save();renderWeekFocus()};text.trim()?confirmAction('Очистить фокус?',text,remove):remove()};$('focusList').append(row);
   });
-  $('addFocus').onclick=()=>{const empty=w.focus.findIndex(x=>!x.trim());if(empty>=0){$('focusList').querySelectorAll('input')[empty].focus();return}w.focus.push('');save();renderWeekFocus();$('focusList').lastElementChild.querySelector('input').focus()};
   checklist($('sideList'),w.sideTasks,renderWeekFocus,'Задача недели');$('addSide').onclick=()=>appendItem(w.sideTasks,renderWeekFocus,'sideList');bindText('thoughts',w,'thoughts');for(const k of ['win','lesson','carry'])bindText(k,w.result,k);
 }
 function renderMonthFocus(){
-  const m=monthData(),p=$('focusPage');p.className='focus-page';
-  const spheres=[['finance','Финансы','wallet','#fff0e9'],['blog','Блог','note','#f3edfb'],['personal','Личное','heart','#fdebf2'],['health','Здоровье','leaf','#eef5e8']];
+  const m=monthData(),p=$('focusPage');p.className='focus-page month-focus-layout';
+  const spheres=[['finance','Финансы','wallet','#fff0e9'],['blog','Блог','note','#f3edfb'],['personal','Личное','heart','#fdebf2'],['health','Здоровье','leaf','#fff2e7']];
   p.innerHTML=`${noteBlock('Фокус месяца','monthFocus')}<section><div class="focus-title"><h2>Сферы жизни</h2></div><div class="month-sphere-grid">${spheres.map(([k,name,ico,color])=>`<section class="month-sphere" style="--sphere-bg:${color}"><div class="sphere-head">${icon(ico)}<h2>${name}</h2></div><label class="sphere-goal"><span>Цель</span><input id="goal-${k}" maxlength="120" placeholder="Главная цель"></label><div class="sphere-list" id="sphere-${k}"></div><button class="block-add" id="add-${k}">Добавить пункт</button></section>`).join('')}</div></section>${noteBlock('Заметки месяца','monthNotes')}`;
   bindText('monthFocus',m,'focus');bindText('monthNotes',m,'notes');
   for(const[k]of spheres){bindText(`goal-${k}`,m.spheres[k],'goal');checklist($(`sphere-${k}`),m.spheres[k].items,renderMonthFocus,'Пункт сферы');$(`add-${k}`).onclick=()=>appendItem(m.spheres[k].items,renderMonthFocus,`sphere-${k}`)}

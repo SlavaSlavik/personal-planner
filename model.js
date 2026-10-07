@@ -1,6 +1,7 @@
 (function(root){
   'use strict';
-  const COLORS=['#f4c6d7','#e8b9d6','#d7c7ed','#f4ceba','#e7d6bb','#cfe3d7'];
+  const COLORS=['#f4c6d7','#e99ab7','#d96a91','#c8b5d9','#f2b99f','#e3c9ae'];
+  const REPLACED_COLORS={'#e8b9d6':'#f4c6d7','#d7c7ed':'#c8b5d9','#f4ceba':'#f2b99f','#e7d6bb':'#e3c9ae','#cfe3d7':'#e3c9ae'};
   const DATE=/^\d{4}-\d{2}-\d{2}$/;
   const id=()=>globalThis.crypto?.randomUUID?.()||`id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const key=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -11,12 +12,14 @@
   const utc=s=>{const [y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d)};
   const distance=(a,b)=>Math.round((utc(a)-utc(b))/86400000);
   const object=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
-  const color=v=>typeof v==='string'&&/^#[\da-f]{6}$/i.test(v)?v:COLORS[0];
+  const color=v=>typeof v==='string'&&/^#[\da-f]{6}$/i.test(v)?REPLACED_COLORS[v.toLowerCase()]||v:COLORS[0];
   const task=t=>({...t,id:t.id||id(),text:t.text||'',done:!!t.done,priority:!!t.priority,displayPlanner:t.displayPlanner!==false,displayCalendar:t.displayCalendar!==false,color:color(t.color)});
   function normalize(value={}){
     const s=JSON.parse(JSON.stringify(value));
     for(const k of Object.keys(s))if(DATE.test(k)&&Array.isArray(s[k]))s[k]=s[k].map(task);
     s.weeks||={};s.months||={};s.series||=[];s.habits||=[];s.stickers||=[];s.preferences||={};s.version=7;
+    for(const series of s.series){series.task=task(series.task);for(const item of Object.values(series.exceptions||{}))if(item?.color)item.color=color(item.color)}
+    for(const sticker of s.stickers)if(sticker.color)sticker.color=color(sticker.color);
     for(const w of Object.values(s.weeks)){
       w.focus=Array.isArray(w.focus)?w.focus.map(String):['','',''];w.sideTasks=(w.sideTasks||[]).map(task);w.thoughts||='';w.result||={};
       for(const k of ['win','lesson','carry'])w.result[k]||='';
